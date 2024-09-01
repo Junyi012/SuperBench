@@ -9,12 +9,13 @@ import os
 import cmocean
 
 
-def plot_energy_spectrum_v2(
+def plot_energy_spectrum_from_uv(
     data_name = "nskt_32k",
-    upcale_factor=16, 
+    upscale_factor=16, 
     snapshot_num=16, # this is a useless parameter (was used for debugging)
     zoom_in_factor=4,
     power=0,
+    path= "/pscratch/sd/j/junyi012/superbench_v2/eval_buffer/",
     ):
     
     if data_name =='era5':
@@ -27,7 +28,7 @@ def plot_energy_spectrum_v2(
     cmap= seaborn.color_palette('YlGnBu', n_colors=len(model_saved_list))
     cmap[-1]= 'r'
     # get data and data range
-    path = "/pscratch/sd/j/junyi012/superbench_v2/eval_buffer/"
+
 
     fig,ax = plt.subplots(figsize=(5.2,4.6),constrained_layout=True)
     fontsize = 18
@@ -36,25 +37,28 @@ def plot_energy_spectrum_v2(
     axins = zoomed_inset_axes(ax,zoom_in_factor,loc='lower left') # [x0, y0, width, height]
     for i,model_name in enumerate(model_saved_list):
         if i ==len(model_saved_list)-1:
-            if os.path.exists(path+f"energy_spectrum_v2_en_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy") == False:
-                hr = np.load(path+f"{data_name}_{upcale_factor}_hr.npy")
-                en, n = energy_spectrum_v2(hr[:,-2],hr[:,-1])
-                np.save(path+f"energy_spectrum_v2_en_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy",en)
+            if os.path.exists(path+f"energy_spectrum_from_uv_en_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy") == False:
+                hr_path = path+f"{data_name}_{upscale_factor}_hr_bicubic_0.0.npy"
+                if os.path.exists(path+hr_path) == False:
+                    raise ValueError("File not found; Hint: Please run the eval.py first with --save_prediction True ")
+                hr = np.load(hr_path)
+                en, n = energy_spectrum_from_uv(hr[:,-2],hr[:,-1])
+                np.save(path+f"energy_spectrum_from_uv_en_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy",en)
                 k = np.linspace(1,n,n)
-                np.save(path+f"energy_spectrum_v2_k_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy",k)
+                np.save(path+f"energy_spectrum_from_uv_k_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy",k)
             else:
-                en = np.load(path+f"energy_spectrum_v2_en_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy")
-                k = np.load(path+f"energy_spectrum_v2_k_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy")
+                en = np.load(path+f"energy_spectrum_from_uv_en_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy")
+                k = np.load(path+f"energy_spectrum_from_uv_k_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy")
         else:
-            if os.path.exists(path+f"energy_spectrum_v2_k_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy") == False:
-                pred = np.load(path+f"{data_name}_{upcale_factor}_{model_name}_pred.npy")
-                en, n = energy_spectrum_v2(pred[:,-2],pred[:,-1])
-                np.save(path+f"energy_spectrum_v2_en_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy",en)
+            if os.path.exists(path+f"energy_spectrum_from_uv_k_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy") == False:
+                pred = np.load(path+f"{data_name}_{upscale_factor}_{model_name}_pred_bicubic_0.0.npy")
+                en, n = energy_spectrum_from_uv(pred[:,-2],pred[:,-1])
+                np.save(path+f"energy_spectrum_from_uv_en_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy",en)
                 k = np.linspace(1,n,n)
-                np.save(path+f"energy_spectrum_v2_k_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy",k)
+                np.save(path+f"energy_spectrum_from_uv_k_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy",k)
             else:
-                en = np.load(path+f"energy_spectrum_v2_en_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy")
-                k = np.load(path+f"energy_spectrum_v2_k_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy")
+                en = np.load(path+f"energy_spectrum_from_uv_en_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy")
+                k = np.load(path+f"energy_spectrum_from_uv_k_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy")
         ax.loglog(k,en[1:len(k)+1]*k**power,label=title_list[i],color=cmap[i])
         axins.loglog(k,en[1:len(k)+1]*k**power,label=title_list[i],color=cmap[i])
     ax.legend(fontsize=labelsize-1,bbox_to_anchor=(0.5, -0.45), loc='lower center',ncol=3)
@@ -78,13 +82,13 @@ def plot_energy_spectrum_v2(
     axins.set_xticks([])
     axins.set_yticks([])
     axins.minorticks_off()
-    fig.savefig(f"energy_spectrum_v2_{data_name}_{upcale_factor}_snpt{snapshot_num}_{power}.png",dpi=300,bbox_inches='tight',transparent=True)
-    fig.savefig(f"energy_spectrum_v2_{data_name}_{upcale_factor}_snpt{snapshot_num}.pdf",bbox_inches='tight')
+    fig.savefig(f"energy_spectrum_from_uv_{data_name}_{upscale_factor}_snpt{snapshot_num}_{power}.png",dpi=300,bbox_inches='tight',transparent=True)
+    fig.savefig(f"energy_spectrum_from_uv_{data_name}_{upscale_factor}_snpt{snapshot_num}.pdf",bbox_inches='tight')
     return True
 
-def plot_energy_spectrum(
+def plot_energy_spectrum_from_w(
     data_name = "nskt_32k",
-    upcale_factor=16, 
+    upscale_factor=16, 
     snapshot_num=16,
     cmap=cmocean.cm.balance):
     if data_name =='era5':
@@ -102,27 +106,30 @@ def plot_energy_spectrum(
     fontsize = 9
     for i,model_name in enumerate(model_saved_list):
         if i ==0:
-            if os.path.exists(path+f"energy_spectrum_en_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy") == False:
-                hr = np.load(path+f"{data_name}_{upcale_factor}_hr.npy")[snapshot_num,-1]
-                en, n = energy_spectrum(2048,2048,hr)
-                np.save(path+f"energy_spectrum_en_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy",en)
+            if os.path.exists(path+f"energy_spectrum_en_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy") == False:
+                hr_path = path+f"{data_name}_{upscale_factor}_hr_bicubic_0.0.npy"
+                if os.path.exists(path+hr_path) == False:
+                    raise ValueError("File not found; Hint: Please run the eval.py first with --save_prediction True ")
+                hr = np.load(path+hr_path)[snapshot_num,-1]
+                en, n = energy_spectrum_from_w(2048,2048,hr)
+                np.save(path+f"energy_spectrum_en_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy",en)
                 k = np.linspace(1,n,n)
-                np.save(path+f"energy_spectrum_k_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy",k)
+                np.save(path+f"energy_spectrum_k_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy",k)
             else:
-                en = np.load(path+f"energy_spectrum_en_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy")
-                k = np.load(path+f"energy_spectrum_k_{data_name}_{upcale_factor}_hr_{snapshot_num}.npy")
+                en = np.load(path+f"energy_spectrum_en_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy")
+                k = np.load(path+f"energy_spectrum_k_{data_name}_{upscale_factor}_hr_{snapshot_num}.npy")
         elif i>0:
-            if os.path.exists(path+f"energy_spectrum_k_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy") == False:
-                pred = np.load(path+f"{data_name}_{upcale_factor}_{model_name}_pred.npy")[snapshot_num,-1] 
+            if os.path.exists(path+f"energy_spectrum_k_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy") == False:
+                pred = np.load(path+f"{data_name}_{upscale_factor}_{model_name}_pred_bicubic_0.0.npy")[snapshot_num,-1] 
                 print(pred.shape)
-                en, n = energy_spectrum(2048,2048,pred)
-                np.save(path+f"energy_spectrum_en_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy",en)
+                en, n = energy_spectrum_from_w(2048,2048,pred)
+                np.save(path+f"energy_spectrum_en_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy",en)
                 k = np.linspace(1,n,n)
-                np.save(path+f"energy_spectrum_k_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy",k)
+                np.save(path+f"energy_spectrum_k_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy",k)
             else:
-                en = np.load(path+f"energy_spectrum_en_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy")
-                k = np.load(path+f"energy_spectrum_k_{data_name}_{upcale_factor}_{model_name}_{snapshot_num}.npy")
-        plt.loglog(k,en[1:]*k**5,label=title_list[i])
+                en = np.load(path+f"energy_spectrum_en_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy")
+                k = np.load(path+f"energy_spectrum_k_{data_name}_{upscale_factor}_{model_name}_{snapshot_num}.npy")
+        plt.loglog(k,en[1:],label=title_list[i])
     
     plt.legend(fontsize=fontsize,bbox_to_anchor=(0.5, -0.2), loc='lower center',ncol=3)
     plt.xlabel("Wavenumber k",fontsize=fontsize)
@@ -135,11 +142,12 @@ def plot_energy_spectrum(
     from matplotlib.ticker import LogLocator
     ax.yaxis.set_major_locator(LogLocator(numticks=5))
     ax.xaxis.set_major_locator(LogLocator(numticks=3))
-    fig.savefig(f"energy_spectrum_{data_name}_{upcale_factor}_snpt{snapshot_num}.png",dpi=300)
-    fig.savefig(f"energy_spectrum_{data_name}_{upcale_factor}_snpt{snapshot_num}.pdf")
+    fig.savefig(f"energy_spectrum_{data_name}_{upscale_factor}_snpt{snapshot_num}.png",dpi=300)
+    fig.savefig(f"energy_spectrum_{data_name}_{upscale_factor}_snpt{snapshot_num}.pdf")
     return True
 
-def energy_spectrum(nx,ny,w):
+def energy_spectrum_from_w(nx,ny,w):
+    '''calculate the energy spectrum from vorticity field '''
     epsilon = 1.0e-6
 
     kx = np.empty(nx)
@@ -179,18 +187,16 @@ def energy_spectrum(nx,ny,w):
         ii = ii+1
         jj = jj+1
         en[k] = np.sum(es[ii,jj])
-#        for i in range(1,nx):
-#            for j in range(1,ny):          
-#                kk1 = np.sqrt(kx[i,j]**2 + ky[i,j]**2)
-#                if ( kk1>(k-0.5) and kk1<(k+0.5) ):
-#                    ic = ic+1
-#                    en[k] = en[k] + es[i,j]
                     
         en[k] = en[k]/ic
         
     return en, n
 
-def energy_spectrum_v2(u,v):
+def energy_spectrum_from_uv(u,v):
+    '''
+    Calculate the energy spectrum from the velocity field
+
+    '''
     import numpy as np
     import matplotlib.pyplot as plt
     import time
@@ -254,7 +260,7 @@ def energy_spectrum_v2(u,v):
     return EK_avsphr,realsize
 
 if __name__ == "__main__":
-    plot_energy_spectrum_v2(power=0)
-    # plot_energy_spectrum_v2(power=3)
-    # plot_energy_spectrum_v2(power=5)
+    plot_energy_spectrum_from_uv(power=0)
+    # plot_energy_spectrum_from_uv(power=3)
+    # plot_energy_spectrum_from_uv(power=5)
     print("Done")

@@ -4,10 +4,11 @@ from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from mpl_toolkits.axes_grid1 import ImageGrid
 import cmocean
+import os
 
 def plot_all_image_uniform(
     data_name = "nskt_16k",
-    upcale_factor=8,
+    upscale_factor=8,
     snapshot_num=16,
     channel_num = -1,
     zoom_loc_x = (300,380),
@@ -16,19 +17,23 @@ def plot_all_image_uniform(
     gridspec_kw={'wspace': 0.3, 'hspace': 0.2},
     speical_load = False,
     noise_ratio=0.05,
+    path = "/pscratch/sd/j/junyi012/superbench_v2/eval_buffer/",
     cmap=cmocean.cm.balance):
 
     model_saved_list = ['Bicubic','SwinIR', ]
     title_list = ['LR','HR','Bicubic','SwinIR']
-    path = "/pscratch/sd/j/junyi012/superbench_v2/eval_buffer/"
-    pred_path = [path+f"{data_name}_{upcale_factor}_{model_name}_{noise_ratio}_pred_uniform.npy" for model_name in model_saved_list]
+  
+    pred_path = [path+f"{data_name}_{upscale_factor}_{model_name}_pred_noisy_uniform_{noise_ratio}.npy" for model_name in model_saved_list]
     
-    lr_path = path+data_name+"_"+str(upcale_factor)+"_" + str(noise_ratio) + "_lr_uniform.npy"
-    hr_path = path+data_name+"_"+str(upcale_factor)+"_" + str(noise_ratio)+"_hr_uniform.npy"
+    lr_path = path+f"{data_name}_{upscale_factor}_lr_noisy_uniform_{noise_ratio}.npy"
+    hr_path = path+f"{data_name}_{upscale_factor}_hr_noisy_uniform_{noise_ratio}.npy"
+    if os.path.exists(path+lr_path) == False:
+        raise ValueError("File not found; Hint: Please run the eval.py first with --save_prediction True ")
     lr = np.load(lr_path)[snapshot_num,channel_num]
     hr = np.load(hr_path)[snapshot_num,channel_num]
     vmin = np.min(hr)
     vmax = np.max(hr)
+
     if data_name.startswith("nskt"): 
         print("nskt adjust color range")
         vmin = vmin +15
@@ -83,8 +88,8 @@ def plot_all_image_uniform(
             # Draw zoom in 
             axins = zoomed_inset_axes(axs[0], zoom_in_factor, loc='lower left')    
             axins.imshow(pred_list[0], vmin=vmin, vmax=vmax, cmap=cmap)
-            axins.set_xlim(tuple(val // upcale_factor for val in zoom_loc_x))
-            axins.set_ylim(tuple(val // upcale_factor for val in zoom_loc_y))
+            axins.set_xlim(tuple(val // upscale_factor for val in zoom_loc_x))
+            axins.set_ylim(tuple(val // upscale_factor for val in zoom_loc_y))
             plt.xticks(visible=False)
             plt.yticks(visible=False)
             _patch, pp1, pp2 = mark_inset(axs[0], axins, loc1=2, loc2=4, fc=fc, ec=ec, lw=1.0, color=box_color) 
@@ -116,8 +121,8 @@ def plot_all_image_uniform(
     # fig.subplots_adjust(wspace=0.1, hspace=0.1,right=0.3)
     # fig.tight_layout(w_pad=0.25,h_pad=0.25,pad=0.25)
     # plt.tight_layout()
-    fig.savefig(data_name+"_"+str(upcale_factor)+"_"+str(snapshot_num)+str(noise_ratio)+"_uniform.png", dpi=300, bbox_inches='tight', transparent=False)
-    fig.savefig(data_name+"_"+str(upcale_factor)+"_25_"+str(snapshot_num)+str(noise_ratio)+"_uniform.pdf", bbox_inches='tight', transparent=False)
+    fig.savefig(data_name+"_"+str(upscale_factor)+"_"+str(snapshot_num)+str(noise_ratio)+"_uniform.png", dpi=300, bbox_inches='tight', transparent=False)
+    fig.savefig(data_name+"_"+str(upscale_factor)+"_25_"+str(snapshot_num)+str(noise_ratio)+"_uniform.pdf", bbox_inches='tight', transparent=False)
 
     return True
 
@@ -131,7 +136,7 @@ def plot_all_image52(
     zoom_loc_y = (80,140),
     figsize=(7,5.8),
     gridspec_kw={'wspace': 0.3, 'hspace': 0.2},
-    speical_load = False,
+    path = "/pscratch/sd/j/junyi012/superbench_v2/plot_buffer/",
     cmap=cmocean.cm.balance):
     if data_name !='era5':
         model_saved_list = ['Bicubic', 'SRCNN','subpixelCNN','FNO2D_patch', 'EDSR', 'WDSR','SwinIR', ]
@@ -140,15 +145,11 @@ def plot_all_image52(
         model_saved_list = ['Bicubic', 'SRCNN','subpixelCNN','FNO2D', 'EDSR', 'WDSR','SwinIR', ]
         title_list = ['LR','HR','Bicubic', 'SRCNN', 'subpixelCNN', 'FNO$^*$','EDSR', 'WDSR', 'SwinIR',]
 
+    lr_path = path+f"{data_name}_{upcale_factor}_lr_bicubic_0.0.npy"
+    hr_path = path+f"{data_name}_{upcale_factor}_hr_bicubic_0.0.npy"
 
-    # get data and data range
-    if speical_load:
-        path = "/pscratch/sd/j/junyi012/superbench_v2/eval_buffer/"
-    else:
-        path = "/pscratch/sd/j/junyi012/superbench_v2/plot_buffer/"
-
-    lr_path = path+data_name+"_"+str(upcale_factor)+"_lr.npy"
-    hr_path = path+data_name+"_"+str(upcale_factor)+"_hr.npy"
+    if os.path.exists(path+lr_path) == False:
+        raise ValueError("File not found; Hint: Please run the eval.py first with --save_prediction True ")
     lr = np.load(lr_path)[snapshot_num,channel_num]
     hr = np.load(hr_path)[snapshot_num,channel_num]
     vmin = np.min(hr)
@@ -158,12 +159,8 @@ def plot_all_image52(
         vmin = vmin +15
         vmax = vmax -5
 
-    if speical_load:
-        pred_path = [path+f"{data_name}_{upcale_factor}_{model_name}_pred.npy" for model_name in model_saved_list]
-        pred_list = [lr,hr]+[np.load(path)[snapshot_num,channel_num] for path in pred_path]
-    else:
-        pred_path = [path+f"{data_name}_{model_name}_{upcale_factor}_pred_b{snapshot_num}c{channel_num}.npy" for model_name in model_saved_list]
-        pred_list = [lr,hr]+[np.load(path)[0,channel_num] for path in pred_path]
+    pred_path = [path+f"{data_name}_{upcale_factor}_{model_name}_pred_bicubic_0.0.npy" for model_name in model_saved_list]
+    pred_list = [lr,hr]+[np.load(path)[snapshot_num,channel_num] for path in pred_path]
     # pred_path = [path+f"{data_name}_{model_name}_{upcale_factor}_pred_b{snapshot_num}c{channel_num}.npy" for model_name in model_saved_list]
     # pred_list = [lr,hr]+[np.load(path)[0,channel_num] for path in pred_path]
     print(lr.shape, hr.shape,pred_list[0].shape,pred_list[1].shape,pred_list[2].shape)
@@ -284,6 +281,7 @@ def plot_all_image42(
     zoom_loc_x = (300,380),
     zoom_loc_y = (80,140),
     figsize=(8,8),
+    path = "/pscratch/sd/j/junyi012/superbench_v2/plot_buffer/",
     cmap=cmocean.cm.balance):
     if data_name !='era5':
         model_saved_list = ['Bicubic', 'SRCNN','subpixelCNN', 'EDSR', 'WDSR','SwinIR', ]
@@ -294,15 +292,22 @@ def plot_all_image42(
 
 
     # get data and data range
-    path = "/pscratch/sd/j/junyi012/superbench_v2/plot_buffer/"
-    lr = np.load(path+data_name+"_"+str(upcale_factor)+"_lr.npy")
-    hr = np.load(path+data_name+"_"+str(upcale_factor)+"_hr.npy")
+    lr_path = path+f"{data_name}_{upcale_factor}_lr_bicubic_0.0.npy"
+    hr_path = path+f"{data_name}_{upcale_factor}_hr_bicubic_0.0.npy"
+    pred_path = [path+f"{data_name}_{upcale_factor}_{model_name}_pred_bicubic_0.0.npy" for model_name in model_saved_list]
+    if os.path.exists(path+lr_path) == False:
+        raise ValueError("File not found; Hint: Please run the eval.py first with --save_prediction True ")
+
+    lr = np.load(lr_path)
+    hr = np.load(hr_path)
+
     lr = lr[snapshot_num,channel_num]
     hr = hr[snapshot_num,channel_num]
     
     vmin = np.min(hr)
     vmax = np.max(hr)
-    pred_list = [lr,hr]+[np.load(path+f"{data_name}_{model_name}_{upcale_factor}_pred_b{snapshot_num}c{channel_num}.npy")[0,channel_num] for model_name in model_saved_list]
+
+    pred_list = [lr,hr]+[np.load(path)[snapshot_num,channel_num] for path in pred_path]
 
     print(len(pred_list))
     print(lr.shape, hr.shape,pred_list[0].shape,pred_list[1].shape,pred_list[2].shape)

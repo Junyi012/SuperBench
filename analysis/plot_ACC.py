@@ -4,6 +4,8 @@ import torch
 import os 
 
 PATH = "/pscratch/sd/j/junyi012/superbench_v2/eval_buffer/"
+
+
 def plot_acc(data_name = "era5",upscale_factor=16):
     fsize = 18
     labelsize = 12
@@ -18,8 +20,11 @@ def plot_acc(data_name = "era5",upscale_factor=16):
             acc = np.load(f"acc_{data_name}_{upscale_factor}_{name}.npy")
         else:
             print("calculating acc")
-            pred = np.load(PATH+f"{data_name}_{upscale_factor}_{name}_pred.npy")
-            hr = np.load(f"/pscratch/sd/j/junyi012/superbench_v2/eval_buffer/{data_name}_{upscale_factor}_hr.npy")
+            if os.path.exists(PATH+f"{data_name}_{upscale_factor}_{name}_pred_bicubic_0.0.npy") == False:
+                raise ValueError(("File not found; Hint: Please run the eval.py first with --save_prediction True "))
+
+            pred = np.load(PATH+f"{data_name}_{upscale_factor}_{name}_pred_bicubic_0.0.npy")
+            hr = np.load(PATH + f"{data_name}_{upscale_factor}_hr_bicubic_0.0.npy")
             acc = calculate_acc(pred[:120,0:1],hr[:120,0:1])
             np.save(f"acc_{data_name}_{upscale_factor}_{name}.npy",acc)
         ax.plot(np.arange(0,acc.shape[0],7),acc[::7],label=model_name_list[jj],marker='o',markersize=2,linewidth=0.7,alpha=0.7)
